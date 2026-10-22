@@ -118,38 +118,107 @@ st.caption(
     f"measure the NDVI–LST relationship for {selected_year}."
 )
 
+
 st.subheader("1. Hottest and coolest zones")
-hot_col, cool_col = st.columns(2)
+st.caption(
+    "Explore the 10 hottest and coolest zones for the selected year. "
+    "Hover over a bar to see temperature, NDVI, coordinates, and observations."
+)
 
 hotspots = heat.nlargest(10, "mean_lst_c").copy()
 coolspots = heat.nsmallest(10, "mean_lst_c").copy()
 
-display_cols = [
-    "latitude", "longitude", "mean_lst_c", "mean_ndvi", "record_count"
-]
-rename_cols = {
-    "latitude": "Latitude",
-    "longitude": "Longitude",
-    "mean_lst_c": "Mean LST (°C)",
-    "mean_ndvi": "Mean NDVI",
-    "record_count": "Records"
-}
+for frame in (hotspots, coolspots):
+    frame["zone_label"] = (
+        frame["latitude"].round(3).astype(str)
+        + ", "
+        + frame["longitude"].round(3).astype(str)
+    )
+
+hot_col, cool_col = st.columns(2)
 
 with hot_col:
     st.markdown("**🔥 Top 10 hottest zones**")
-    st.dataframe(
-        hotspots[display_cols].rename(columns=rename_cols).round(4),
-        use_container_width=True,
-        hide_index=True
+    hot_fig = px.bar(
+        hotspots.sort_values("mean_lst_c", ascending=True),
+        x="mean_lst_c",
+        y="zone_label",
+        orientation="h",
+        color="mean_lst_c",
+        color_continuous_scale="OrRd",
+        hover_data={
+            "mean_lst_c": ":.2f",
+            "mean_ndvi": ":.3f",
+            "latitude": ":.4f",
+            "longitude": ":.4f",
+            "record_count": True,
+            "zone_label": False,
+        },
+        labels={
+            "mean_lst_c": "Mean LST (°C)",
+            "zone_label": "Zone (lat, lon)",
+            "mean_ndvi": "Mean NDVI",
+            "record_count": "Observations",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+        },
     )
+    hot_fig.update_layout(
+        height=420,
+        showlegend=False,
+        coloraxis_showscale=False,
+        xaxis_title="Mean land-surface temperature (°C)",
+        yaxis_title="Zone (latitude, longitude)",
+        margin={"l": 5, "r": 35, "t": 10, "b": 5},
+    )
+    hot_fig.update_traces(
+        texttemplate="%{x:.1f}°C",
+        textposition="outside",
+        cliponaxis=False,
+    )
+    st.plotly_chart(hot_fig, use_container_width=True)
 
 with cool_col:
     st.markdown("**❄️ Top 10 coolest zones**")
-    st.dataframe(
-        coolspots[display_cols].rename(columns=rename_cols).round(4),
-        use_container_width=True,
-        hide_index=True
+    cool_fig = px.bar(
+        coolspots.sort_values("mean_lst_c", ascending=False),
+        x="mean_lst_c",
+        y="zone_label",
+        orientation="h",
+        color="mean_lst_c",
+        color_continuous_scale="Teal",
+        hover_data={
+            "mean_lst_c": ":.2f",
+            "mean_ndvi": ":.3f",
+            "latitude": ":.4f",
+            "longitude": ":.4f",
+            "record_count": True,
+            "zone_label": False,
+        },
+        labels={
+            "mean_lst_c": "Mean LST (°C)",
+            "zone_label": "Zone (lat, lon)",
+            "mean_ndvi": "Mean NDVI",
+            "record_count": "Observations",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+        },
     )
+    cool_fig.update_layout(
+        height=420,
+        showlegend=False,
+        coloraxis_showscale=False,
+        xaxis_title="Mean land-surface temperature (°C)",
+        yaxis_title="Zone (latitude, longitude)",
+        margin={"l": 5, "r": 35, "t": 10, "b": 5},
+    )
+    cool_fig.update_traces(
+        texttemplate="%{x:.1f}°C",
+        textposition="outside",
+        cliponaxis=False,
+    )
+    st.plotly_chart(cool_fig, use_container_width=True)
+
 
 st.subheader("2. Interactive map layers")
 map_layer = st.radio(
